@@ -1,0 +1,63 @@
+//@version=6
+indicator("US30 SMA Crossover + Lux Sessions + First 5m & 30m Range", overlay=true)
+
+// === Inputs ===
+shortLen = input.int(20, "Short SMA Length")
+longLen  = input.int(50, "Long SMA Length")
+
+// === Moving Averages ===
+smaShort = ta.sma(close, shortLen)
+smaLong  = ta.sma(close, longLen)
+plot(smaShort, color=color.rgb(255, 34, 0), linewidth=2, title="SMA Short")
+plot(smaLong, color=#2195f3, linewidth=2, title="SMA Long")
+
+// === Trading Sessions ===
+sessionTokyo    = input.session("0200-0900", "Tokyo Session")
+sessionMorning  = input.session("0900-1300", "London Morning Session")
+sessionAfternoon  = input.session("1300-1530", "London Afternoon Session")
+sessionNewYork= input.session("1530-2200", "New York Session")
+sessionNight= input.session("2200-0200", "Night Session")
+
+inTokyo     = not na(time(timeframe.period, sessionTokyo, "Europe/Luxembourg"))
+inMorning   = not na(time(timeframe.period, sessionMorning, "Europe/Luxembourg"))
+inAfternoon = not na(time(timeframe.period, sessionAfternoon, "Europe/Luxembourg"))
+inNight = not na(time(timeframe.period, sessionNight, "Europe/Luxembourg"))
+
+bgcolor(inTokyo    ? color.new(#00ffcc, 95) : na, title="Tokyo Session")       // verde-albastru pal
+bgcolor(inMorning  ? color.new(#690089, 95) : na, title="London Morning")      // mov
+bgcolor(inAfternoon? color.new(#0095ff, 95) : na, title="New York Session")    // albastru
+bgcolor(inNight? color.new(#0095ff, 95) : na, title="Night Session")    // Black
+
+// === First 5 minutes High & Low (15:30–15:35 Luxembourg) ===
+var float first5High = na
+var float first5Low  = na
+
+// === First 30 minutes High & Low (15:30–16:00 Luxembourg) ===
+var float first30High = na
+var float first30Low  = na
+
+// Reset zilnic la începutul zilei
+newDay = ta.change(time("D")) != 0
+if newDay
+    first5High  := na
+    first5Low   := na
+    first30High := na
+    first30Low  := na
+
+// Bara de 5 minute
+inFirst5 = not na(time("1", "1530-1535", "Europe/Luxembourg"))
+if inFirst5
+    first5High := na(first5High) ? high : math.max(first5High, high)
+    first5Low  := na(first5Low)  ? low  : math.min(first5Low, low)
+
+// Bara de 30 minute
+inFirst30 = not na(time("1", "1530-1600", "Europe/Luxembourg"))
+if inFirst30
+    first30High := na(first30High) ? high : math.max(first30High, high)
+    first30Low  := na(first30Low)  ? low  : math.min(first30Low, low)
+
+// Linii galbene și portocalii cu breaks și 50% opacitate
+plot(first5High,  title="First 5m High",  color=color.new(color.yellow, 50), linewidth=2, style=plot.style_linebr)
+plot(first5Low,   title="First 5m Low",   color=color.new(color.yellow, 50), linewidth=2, style=plot.style_linebr)
+plot(first30High, title="First 30m High", color=color.new(color.orange, 50), linewidth=2, style=plot.style_linebr)
+plot(first30Low,  title="First 30m Low",  color=color.new(color.orange, 50), linewidth=2, style=plot.style_linebr)
